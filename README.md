@@ -7,3 +7,17 @@ A humble pre-release library that does one thing only: provides a `generate_text
 ![gatsby-remark-twitter-cards in action](https://i.imgur.com/UGFRs9g.png)
 
 It was made for the use case described in [`gatsby-remark-twitter-cards`](https://github.com/alessbell/gatsby-remark-twitter-cards).
+
+## Contributing
+
+Contributions are warmly welcome! Upon cloning this repo, you can run the command `wasm-pack build --target nodejs` to build from `src`.
+
+## Roadmap
+
+- [ ] Custom font
+- [ ] Custom background from image with e.g. [Gaussian blur](https://docs.rs/image/0.19.0/image/imageops/fn.blur.html)
+- [x] Prints title and subtitle
+- [x] Choice of font family (monospace, sans serif)
+- [x] Custom font color
+- [x] Custom title font size
+- [x] Custom subtitle font size
