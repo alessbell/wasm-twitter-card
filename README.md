@@ -14,8 +14,7 @@ Contributions are warmly welcome! Upon cloning this repo, you can run the comman
 
 ## Roadmap
 
-- [ ] Custom font
-- [ ] Custom background from image with e.g. [Gaussian blur](https://docs.rs/image/0.19.0/image/imageops/fn.blur.html)
+- [x] Custom font
 - [x] Prints title and subtitle
 - [x] Choice of font family (monospace, sans serif)
 - [x] Custom font color

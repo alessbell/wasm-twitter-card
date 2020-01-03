@@ -1,9 +1,10 @@
 mod utils;
 use glyph_brush_layout::{
-    rusttype::{point, Font, Scale},
+    rusttype::{Font, Scale},
     *,
 };
 use image::{DynamicImage, Rgba};
+use js_sys::Uint8Array;
 use serde_wasm_bindgen;
 use wasm_bindgen::prelude::*;
 
@@ -27,7 +28,8 @@ pub fn generate_text(
     title_font_size: i32,
     subtitle_font_size: i32,
     rgb: JsValue,
-    has_serif_font: bool,
+    font_style: &str,
+    font_file: Uint8Array,
 ) -> Vec<u8> {
     utils::set_panic_hook();
     const WIDTH: f32 = 1200.0;
@@ -36,27 +38,26 @@ pub fn generate_text(
 
     let rgb_value: (u8, u8, u8) = serde_wasm_bindgen::from_value(rgb).unwrap();
 
-    // Load the font
-    // let font_data = include_bytes!("../fonts/GT-Pressura-Mono-Bold.ttf");
-    // This only succeeds if collection consists of one font
-    let font = Font::from_bytes(&include_bytes!("../fonts/GT-Pressura-Mono-Bold.ttf")[..])
-        .expect("Error constructing Font");
-    // // Load the font
-    // let font_data = include_bytes!("../fonts/GT-Pressura-Mono-Bold.ttf");
-    // // This only succeeds if collection consists of one font
-    // let font = Font::from_bytes(font_data as &[u8]).expect("Error constructing Font");
+    let font = if font_style == "monospace" {
+        Font::from_bytes(&include_bytes!("../fonts/Inconsolata-Medium.ttf")[..])
+            .expect("Error constructing Font")
+    } else if font_style == "sans-serif" {
+        Font::from_bytes(&include_bytes!("../fonts/OpenSans-Regular.ttf")[..])
+            .expect("Error constructing Font")
+    } else {
+        // take font binary passed in as Uint8Array and copy the contents into a new vec
+        let user_font = font_file.to_vec();
+        Font::from_bytes(user_font).expect("Error constructing Font")
+    };
 
-    // let dejavu =
-    //     Font::from_bytes(&include_bytes!("../fonts/GT-Pressura-Mono-Bold.ttf")[..]).unwrap();
-    // let garamond =
-    //     Font::from_bytes(&include_bytes!("../fonts/GT-Pressura-Mono-Bold.ttf")[..]).unwrap();
     let fonts = vec![font];
+    let bounds = (WIDTH - (PADDING * 2.0), HEIGHT - (PADDING * 2.0));
 
     let title_glyphs: Vec<_> = Layout::default().calculate_glyphs(
         &fonts,
         &SectionGeometry {
-            screen_position: (0.0, 0.0),
-            bounds: (WIDTH, HEIGHT),
+            screen_position: (PADDING, PADDING),
+            bounds: bounds,
         },
         &[SectionText {
             text: title,
@@ -69,8 +70,8 @@ pub fn generate_text(
     let author_glyphs: Vec<_> = Layout::default().calculate_glyphs(
         &fonts,
         &SectionGeometry {
-            screen_position: (0.0, 0.0),
-            bounds: (WIDTH, HEIGHT),
+            screen_position: (PADDING, HEIGHT - PADDING - subtitle_font_size as f32),
+            bounds: bounds,
         },
         &[SectionText {
             text: author,
@@ -80,19 +81,16 @@ pub fn generate_text(
         }],
     );
 
-    // Create a new rgba image with some padding
+    // Create a new rgba image
     let mut image = DynamicImage::new_rgba8(WIDTH as u32, HEIGHT as u32).to_rgba();
 
     for glyph in title_glyphs {
         if let Some(bounding_box) = glyph.0.pixel_bounding_box() {
-            // Draw the glyph into the image per-pixel by using the draw closure
-            // log!("{:?}", glyph);
             glyph.0.draw(|x, y, v| {
                 image.put_pixel(
                     // Offset the position by the glyph bounding box
                     x + bounding_box.min.x as u32,
                     y + bounding_box.min.y as u32,
-                    // Turn the coverage into an alpha value
                     Rgba([rgb_value.0, rgb_value.1, rgb_value.2, (v * 255.0) as u8]),
                 )
             });
@@ -101,15 +99,11 @@ pub fn generate_text(
 
     for glyph in author_glyphs {
         if let Some(bounding_box) = glyph.0.pixel_bounding_box() {
-            // Draw the glyph into the image per-pixel by using the draw closure
             glyph.0.draw(|x, y, v| {
                 image.put_pixel(
                     // Offset the position by the glyph bounding box
                     x + bounding_box.min.x as u32,
-                    (HEIGHT as u32 - bounding_box.max.y as u32) + (y + bounding_box.min.y as u32)
-                        - PADDING as u32,
-                    // y + bounding_box.min.y as u32 + HEIGHT as u32 - PADDING as u32 - 60,
-                    // Turn the coverage into an alpha value
+                    y + bounding_box.min.y as u32,
                     Rgba([rgb_value.0, rgb_value.1, rgb_value.2, (v * 255.0) as u8]),
                 )
             });
